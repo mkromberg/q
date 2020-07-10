@@ -1,0 +1,15 @@
+ z←f1 w;c;d;i;n;q;x
+ n←≢x←⌽⊃w
+ z←n⍴0
+ i←n-1
+ :While 0≤i
+     c←x[i]
+     :If i=n-1 ⋄ q←?((n-1),1)/10,c+1<n ⋄ :EndIf
+     z[i]←d←q[i]
+     :If d<c ⋄ z[⍳i]←q[⍳i] ⋄ i←i-1
+     :ElseIf d=c ⋄ i←i-1
+     :ElseIf d>c ⋄ i←n-1
+     :EndIf
+ :EndWhile
+ z←⌽z
+ z←(⊂z,⍳⍬≡z),(⊂,1),⍬≢z←(+/∧\0=z)↓z

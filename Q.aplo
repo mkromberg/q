@@ -1,0 +1,172 @@
+ Q←{
+     icarry←{((∧/b)-⍨+/∧\b←0=t)↓t←{1↓+⌿1 0⌽0,0 10⊤⍵}⍣≡0,⍵}
+     iplus←{icarry(m↑⍺)+m↑⍵⊣m←-(≢⍺)+≢⍵}
+     iminus←{icarry ⍺-(-≢⍺)↑⍵}
+     icmp←{0≠s←×(≢⍺)-≢⍵:s ⋄ (s,0)[1⍳⍨0≠s←×⍺-⍵]}
+
+     itimes←{
+         roots←{×\1,1↓(1⌈⍵÷2)⍴¯1*2÷⍵}
+         cube←{⍵⍴⍨2⍴⍨2⍟≢⍵}
+         extend←{(2*⌈2⍟¯1+(≢⍺)+≢⍵)↑¨⍺ ⍵}
+         floop←{(⊣/⍺)∇⍣(×m)⊢(+⌿⍵),[m-0.5]⍺×[⍳m←≢⍴⍺]-⌿⍵}
+         FFT←{,(cube roots≢⍵)floop cube ⍵}
+         iFFT←{(≢⍵)÷⍨,(cube+roots≢⍵)floop cube ⍵}
+         rconvolve←{(¯1+(≢⍺)+≢⍵)↑iFFT⊃×/FFT¨⍺ extend ⍵}
+         icarry 0,⌊0.5+9○⍺ rconvolve ⍵
+     }
+
+     idiv←{⎕D⍳⎕D[⍺]÷nats ⎕D[⍵]}
+     iresidue←{⍵ iminus ⍺ itimes ⍵ idiv ⍺}
+     igcd←{⍵≡,0:⍺ ⋄ ⍵ ∇ ⍵ iresidue ⍺}
+
+     qnat←{assert(¯1≠⊃⌽⍵)∧(,1)≡1⊃⍵: ⋄ ⍵}  ⍝ must be a natural number (≥0)
+     qcancel←{(⊂,1)≡g←igcd/2↑⍵:⍵ ⋄ ((2↑⍵)idiv¨g),2↓⍵}
+
+     qplus←{
+         (an ad as)←⍺
+         (wn wd ws)←⍵
+         g←ad igcd wd
+         zd←ad itimes⊢r←wd idiv g
+         ax←an itimes r
+         wx←wn itimes ad idiv g
+         as=ws:qcancel(⊂ax iplus wx),(⊂zd),ws
+         s←ax icmp wx
+         0=s:(,¨0 1),0
+         1=s:qcancel(⊂ax iminus wx),(⊂zd),as
+         qcancel(⊂wx iminus ax),(⊂zd),ws
+     }
+
+     qnegate←{(2↑⍵),-2↓⍵}
+     qminus←{⍺ qplus qnegate ⍵}
+
+     qtimes←{
+         (an ad as)←⍺
+         (wn wd ws)←⍵
+         qcancel(⊂an itimes wn),(⊂ad itimes wd),as×ws
+     }
+
+     qrecip←{assert 0≠⊃⌽⍵: ⋄ ⍵[1 0 2]}
+     qdiv←{⍺ qtimes qrecip ⍵}
+
+     qfloor←{(,1)≡1⊃⍵:⍵ ⋄ (⊂1 iplus⍣(¯1=⊃⌽⍵)⊢(⊃⍵)idiv 1⊃⍵),(⊂,1),¯1↑⍵}
+
+     qabs←{(2↑⍵),|⊃⌽⍵}
+     qresidue←{0=⊃⌽⍺:⍵ ⋄ ⍵ qminus ⍺ qtimes qfloor ⍵ qdiv ⍺}
+
+     qfact←{((⊂,1),1),⍨⊂{(,0)≡⍵:,1 ⋄ ⍵ itimes ∇ ⍵ iminus,1}⊃qnat ⍵}
+
+     qbin←{
+         a←⊃qnat ⍺
+         w←⊃qnat ⍵
+         1=a icmp w:(,¨0 1),0
+         d←w iminus a
+         m←10⊥a⊣⍣(1>a icmp d)⊢d
+         n←⊃itimes/(0⌷⍵)iminus¨↓⍉10⊥⍣¯1⍳m
+         d←⊃itimes/↓⍉10⊥⍣¯1⊢1+⍳m
+         (⊂n idiv d),(⊂,1),1
+     }
+
+     qpow←{
+         'nonce error'assert(,1)≡1⊃⍵:
+         0=⊃⌽⍺:(0=⊃⌽qnat ⍵)⊃(⊂⍺),⊂(,¨1 1),1
+         ∧/(2↑⍺)≡,¨1 1:(,¨1 1),¯1*(¯1=⊃⌽⍺)∧2|⊃⌽⊃⍵
+         'limit error'assert 15≥≢⊃⍵:
+         a←qrecip⍣(¯1=⊃⌽⍵)⊢⍺
+         n←10⊥⊃⍵
+         a{⍺←(,¨1 1),1 ⋄ 0=⍵:⍺ ⋄ (⍺⍺ qtimes⍣(2|⍵)⊢⍺)((⍺⍺ qtimes ⍺⍺)∇∇)⌊⍵÷2}n
+     }
+
+     qgcd←{(qabs ⍺){0=⊃⌽⍵:⍺ ⋄ ⍵ ∇ ⍵ qresidue ⍺}qabs ⍵}
+     qlcm←{qi ⍺ qtimes ⍵ qdiv ⍺ qgcd ⍵}
+
+     qcmp←{
+         (an ad as)←⍺
+         (wn wd ws)←⍵
+         (as≠ws)∨0=as:(as×0≠as)-ws×0=as
+         as×(an itimes wd)icmp(ad itimes wn)
+     }
+
+     f←(⍺⍺{aa←⍺⍺ ⋄ ⊃⎕CR'aa'}⍵),1+0≠⎕NC'⍺'
+
+⍝ scalar functions
+     '+' 1≡f:⍵
+     '+' 2≡f:⍺ qplus ⍵
+     '-' 1≡f:qnegate ⍵
+     '-' 2≡f:⍺ qminus ⍵
+     '×' 1≡f:⊃⌽⍵
+     '×' 2≡f:⍺ qtimes ⍵
+     '÷' 1≡f:qrecip ⍵
+     '÷' 2≡f:⍺ qtimes qrecip ⍵
+     '⌊' 1≡f:qfloor ⍵
+     '⌊' 2≡f:⍺⊣⍣(0≥⍺ qcmp ⍵)⊢⍵
+     '⌈' 1≡f:qnegate qfloor qnegate ⍵
+     '⌈' 2≡f:⍺⊣⍣(0≤⍺ qcmp ⍵)⊢⍵
+     '|' 1≡f:qabs ⍵
+     '|' 2≡f:⍺ qresidue ⍵
+     '!' 1≡f:qfact ⍵
+     '!' 2≡f:⍺ qbin ⍵
+     '*' 2≡f:⍺ qpow ⍵
+     '∨' 2≡f:⍺ qgcd ⍵
+     '∧' 2≡f:⍺ qlcm ⍵
+     '<' 2≡f:0>⍺ qcmp ⍵
+     '≤' 2≡f:0≥⍺ qcmp ⍵
+     '=' 2≡f:⍺≡⍵
+     '≠' 2≡f:⍺≢⍵
+     '≥' 2≡f:0≤⍺ qcmp ⍵
+     '>' 2≡f:0<⍺ qcmp ⍵
+
+     qfmt1a←{((¯1=⊃⌽⍵)⍴'¯'),⎕D[0⊃⍵],((,1)≢1⊃⍵)/'r',⎕D[1⊃⍵]}
+
+     qfmt2da←{
+         0=⊃⌽⍵:'0',((×⍺)⍴'.'),⍺⍴'0'
+         a←⊃qfloor((⊂(⊃⍵),⍺⍴0),(1⌷⍵),1)qplus(,¨1 2),1
+         ('¯'⍴⍨(a≢,0)∧0>⊃⌽⍵),⎕D[(⍳⍺≥≢a),(-⍺)↓a],((×⍺)⍴'.'),⎕D[(-⍺)↑a]
+     }
+
+     qfmt2ea←{
+         0=⊃⌽⍵:'0.',((¯1-⍺)⍴'0'),'e0'
+         a←|⍺
+         (p q)←2↑⍵
+         k←⌈1+a+(≢q)-≢p
+         c←(1+a)↑d←((k+≢p)↑p)idiv q
+         c←⎕D[(a↑c)iplus(-a)↑5≤c[a]]
+         e←(¯1+≢d)-k
+         ((0>⊃⌽⍵)⍴'¯'),(⊃c),((¯1≠⍺)⍴'.'),(1↓c),'e',⍕e
+     }
+
+     ac←{  ⍝ align columns
+         s←(×/¯1↓s),¯1↑s←(-2⌈≢⍴⍵)↑1 1,⍴⍵
+         m←-(~(⊃⌽s)↑1)+⌈⌿s⍴≢¨⍵
+         0=⎕NC'⍺':m{∊⍺↑¨⍵}⍤1⊢⍵
+         n←⌈⌿s⍴≢¨⍺
+         ∊⍤1⊢(m↑¨⍤1⊢⍵),¨(n↑¨⍤1⊢⍺)
+     }
+
+     qfmt1←{(326=⎕DR ⍵)⍲∧/,3=≢¨⍵:qfmt1a ⍵ ⋄ ac qfmt1a¨⍵}
+
+     qfmt2d←{(326=⎕DR ⍵)⍲∧/,3=≢¨⍵:⍺ qfmt2da ⍵ ⋄ ac ⍺ qfmt2da¨⍵}
+     qfmt2e←{(326=⎕DR ⍵)⍲∧/,3=≢¨⍵:⍺ qfmt2ea ⍵ ⋄ (e↓¨t)ac(e←t⍳¨'e')↑¨t←⍺ qfmt2ea¨⍵}
+
+     qfmt2←{assert(0=≢⍴⍺)∧⍺≡⌊⍺: ⋄ 0≤⍺:⍺ qfmt2d ⍵ ⋄ ⍺ qfmt2e ⍵}
+
+     qGauss←{
+         ⍺=n←≢⍵:⍵
+         assert n>i←⍺+(0=⊃∘⌽¨⍵[⍺↓⍳n;⍺])⍳0:
+         w←⍵ ⋄ w[i,⍺;]←w[⍺,i;] ⋄ w[⍺;]←w[⍺;]÷Q¨w[⍺;⍺]
+         j←(⍳n)~⍺
+         w[j;]←w[j;]-Q¨w[j;⍺]∘.(×Q)w[⍺;]
+         (1+⍺)∇ w
+     }
+
+     x←(+Q).(×Q)
+     qmatinv←{assert 2=≢⍴⍵: ⋄ ≠/⍴⍵:(∇(⍉⍵)x ⍵)x⍉⍵ ⋄ (0,n)↓0 qGauss ⍵,qi¨∘.=⍨⍳n←≢⍵}
+     qmatdiv←{assert 2=≢⍴⍵: ⋄ ≠/⍴⍵:(⌹Q(⍉⍵)x ⍵)x(⍉⍵)x ⍺ ⋄ (⌹Q ⍵)x ⍺}
+
+⍝ non-scalar functions
+     '⍕' 1≡f:qfmt1 ⍵
+     '⍕' 2≡f:⍺ qfmt2 ⍵
+     '⌹' 1≡f:qmatinv ⍵
+     '⌹' 2≡f:⍺ qmatdiv ⍵
+
+     'not implemented'assert 0:
+ }

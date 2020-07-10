@@ -1,0 +1,8 @@
+ cfract←{                ⍝ Continued fraction approximation of real ⍵.
+     ⍺←⎕CT ⋄ ⎕CT←⍺       ⍝ default comparison tolerance.
+     ,↑{                 ⍝ cf from rational ⍺÷⍵:
+         ⍵=1:⍺           ⍝ whole number: finished.
+         n r←0 ⍵⊤⍺       ⍝ next term and remainder.
+         n,⍵ ∇ r         ⍝ next term and cf of remainder.
+     }/⌊⍵ 1÷1∨⍵          ⍝ whole number ratio.
+ }

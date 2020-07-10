@@ -1,0 +1,10 @@
+ z←a pow n;s
+ s←a
+ z←1
+ :While 0≠n
+     :If 1=2|n
+         z←z×s
+     :EndIf
+     s←×⍨s
+     n←⌊n÷2
+ :EndWhile
